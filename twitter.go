@@ -1,4 +1,6 @@
-package flex_eth
+package main
+
+import "fmt"
 
 type TwitterAuth struct {
 	bearer string
@@ -6,4 +8,8 @@ type TwitterAuth struct {
 
 func (auth TwitterAuth) DebugText() string {
 	return auth.bearer
+}
+
+func wtf() {
+	fmt.Println("Wtf wtf wtf")
 }
