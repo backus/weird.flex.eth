@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -19,6 +20,12 @@ func main() {
 	check(err)
 	seed = seed.Inflate(client)
 	seed.Persist()
+
+	requestCache := NewFileSystemCache("data")
+
+	result := client.ListFollowing(*seed.Users[0].Id, requestCache, ListFollowingOptions{})
+
+	fmt.Printf("Result: %+v\n", result)
 
 	// twitterAuth := TwitterAuth{bearerToken}
 

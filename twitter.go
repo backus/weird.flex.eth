@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/gosimple/slug"
 )
 
 type TwitterAuth struct {
@@ -58,6 +61,75 @@ type TwitterUser struct {
 
 type TwitterUserListData struct {
 	Data []TwitterUser
+}
+
+type ListFollowingOptions struct {
+	PaginationToken *string
+}
+
+type ListFollowingRequestInput struct {
+	path   string
+	params map[string]string
+}
+
+func (req ListFollowingRequestInput) CacheKey() string {
+	token, isPresent := req.params["pagination_token"]
+	var tokenDisplay string
+
+	if isPresent {
+		tokenDisplay = token
+	} else {
+		tokenDisplay = "Nil"
+	}
+
+	return slug.Make(req.path + "?pagination_token=" + tokenDisplay)
+}
+
+var UserFields = []string{"created_at", "description", "entities", "id", "location", "name", "pinned_tweet_id", "profile_image_url", "protected", "public_metrics", "url", "username", "verified", "withheld"}
+
+type TwitterUserFollowing struct {
+	Id       string  `json:"id"`
+	Name     string  `json:"name"`
+	Url      *string `json:"url"`
+	Username string  `json:"username"`
+}
+
+type PaginatedUserList struct {
+	Data []TwitterUserFollowing
+	Meta struct {
+		ResultCount int     `json:"result_count"`
+		NextToken   *string `json:"next_token"`
+	}
+}
+
+func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, options ListFollowingOptions) PaginatedUserList {
+	path := fmt.Sprintf("/2/users/%s/following", userId)
+	params := make(map[string]string)
+	params["max_results"] = "1000"
+	params["user.fields"] = strings.Join(UserFields, ",")
+
+	if options.PaginationToken != nil {
+		params["pagination_token"] = *options.PaginationToken
+	}
+
+	requestInput := ListFollowingRequestInput{path, params}
+	url := apiRoute(path, params)
+	var paginatedUserList PaginatedUserList
+	var rawResponse string
+
+	if cache.IsCached(requestInput) {
+		fmt.Println("Cache hit")
+		rawResponse = string(cache.ReadCache(requestInput))
+	} else {
+		fmt.Println("Cache miss")
+
+		rawResponse = submitGetRequest(tw, url)
+		cache.WriteCache(requestInput, []byte(rawResponse))
+	}
+
+	json.Unmarshal([]byte(rawResponse), &paginatedUserList)
+
+	return paginatedUserList
 }
 
 func (tw TwitterClient) LookupUsers(usernames []string) (TwitterUserListData, error) {
@@ -159,6 +231,30 @@ func apiRoute(path string, query map[string]string) string {
 	baseUrl.RawQuery = givenQuery.Encode()
 
 	return baseUrl.String()
+}
+
+func submitGetRequest(tw TwitterClient, url string) string {
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	check(err)
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tw.auth.bearer))
+
+	response, err := client.Do(req)
+	check(err)
+
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	check(err)
+	strBody := string(body)
+
+	if response.StatusCode != 200 {
+		log.Fatalf("Error! Received status code %s while requesting %s\nResponse body = %s\n", response.Status, url, strBody)
+	}
+
+	return strBody
 }
 
 func submitPostRequest(tw TwitterClient, url string, payload interface{}) string {
