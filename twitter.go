@@ -18,6 +18,11 @@ type TwitterClient struct {
 	auth TwitterAuth
 }
 
+type CachingTwitterClient struct {
+	client TwitterClient
+	cache  FileSystemCache
+}
+
 const Hostname string = "https://eoukkwxovtn2fsw.m.pipedream.net"
 
 // const Hostname string = "https://api.twitter.com"
