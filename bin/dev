@@ -1,0 +1,5 @@
+#!/bin/bash
+
+printf "Watching git tracked files:\n\n%s\n\n" "$(git ls-files | sd "^(.+)$" " - \$1")"
+
+git ls-files | entr -cc -p go run cmd/main.go
