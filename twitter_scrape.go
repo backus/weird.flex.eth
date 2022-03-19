@@ -10,6 +10,7 @@ import (
 type TwitterScrapeSeedUser struct {
 	Username string  `json:"username"`
 	Id       *string `json:"id,omitempty"`
+	Enabled  bool    `json:"enabled"`
 }
 
 func (user TwitterScrapeSeedUser) String() string {
@@ -27,7 +28,7 @@ type TwitterScrapeSeedInstructions struct {
 	Users []TwitterScrapeSeedUser `json:"users"`
 }
 
-const SeedFile = "data/seed.json"
+const SeedFile = "config/seed.json"
 
 func LoadTwitterScrapeSeed() (TwitterScrapeSeedInstructions, error) {
 	seedFileContents, err := ioutil.ReadFile(SeedFile)
