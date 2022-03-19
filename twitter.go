@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type TwitterAuth struct {
@@ -18,6 +19,8 @@ type TwitterClient struct {
 }
 
 const Hostname string = "https://eoukkwxovtn2fsw.m.pipedream.net"
+
+// const Hostname string = "https://api.twitter.com"
 
 func NewTwitterClient(bearerToken string) TwitterClient {
 	auth := TwitterAuth{bearerToken}
@@ -35,6 +38,42 @@ func (tw TwitterClient) String() string {
 	return fmt.Sprintf("TwitterClient(bearer=%s)", tw.auth.bearer)
 }
 
+type TwitterUser struct {
+	Id       string
+	Name     string
+	Username string
+}
+
+type TwitterUserListData struct {
+	Data []TwitterUser
+}
+
+func (tw TwitterClient) LookupUsers(usernames []string) (TwitterUserListData, error) {
+	client := &http.Client{}
+
+	serializedQuery := strings.Join(usernames, ",")
+	uri := apiRoute("/2/users/by", map[string]string{"usernames": serializedQuery})
+
+	req, err := http.NewRequest("GET", uri, nil)
+	check(err)
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tw.auth.bearer))
+
+	response, err := client.Do(req)
+	check(err)
+
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+
+	check(err)
+
+	var userList TwitterUserListData
+	json.Unmarshal([]byte(body), &userList)
+
+	return userList, nil
+}
+
 func (tw TwitterClient) writeToRequestBin(value string) {
 	// url :=
 	// curl -d '{
@@ -42,7 +81,7 @@ func (tw TwitterClient) writeToRequestBin(value string) {
 	// }'   -H "Content-Type: application/json"   https://eoukkwxovtn2fsw.m.pipedream.net
 	payload := map[string]string{"test": value}
 
-	rawBody := postReq(tw, apiRoute("/route", map[string]string{"foo": "bar"}), payload)
+	rawBody := submitPostRequest(tw, apiRoute("/route", map[string]string{"foo": "bar"}), payload)
 	fmt.Printf("Response body (raw): %s\n", rawBody)
 	// serialized, err := json.Marshal(payload)
 
@@ -76,7 +115,7 @@ func apiRoute(path string, query map[string]string) string {
 	return baseUrl.String()
 }
 
-func postReq(tw TwitterClient, url string, payload interface{}) string {
+func submitPostRequest(tw TwitterClient, url string, payload interface{}) string {
 	serialized, err := json.Marshal(payload)
 
 	check(err)
