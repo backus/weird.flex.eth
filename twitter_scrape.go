@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 )
 
 type TwitterScrapeSeedUser struct {
 	Username string  `json:"username"`
-	Id       *string `json:"id"`
+	Id       *string `json:"id,omitempty"`
 }
 
 func (user TwitterScrapeSeedUser) String() string {
@@ -26,8 +27,10 @@ type TwitterScrapeSeedInstructions struct {
 	Users []TwitterScrapeSeedUser `json:"users"`
 }
 
+const SeedFile = "data/seed.json"
+
 func LoadTwitterScrapeSeed() (TwitterScrapeSeedInstructions, error) {
-	seedFileContents, err := ioutil.ReadFile("data/seed.json")
+	seedFileContents, err := ioutil.ReadFile(SeedFile)
 	if err != nil {
 		return TwitterScrapeSeedInstructions{}, err
 	}
@@ -50,7 +53,12 @@ func (seed TwitterScrapeSeedInstructions) Inflate(client TwitterClient) TwitterS
 		}
 	}
 
-	result, err := client.FakeLookupUsers(usernames)
+	if len(usernames) == 0 {
+		log.Println("All seed users already have IDs. No inflation necessary")
+		return seed
+	}
+
+	result, err := client.LookupUsers(usernames)
 	check(err)
 
 	idMap := make(map[string]string)
@@ -75,4 +83,12 @@ func (seed TwitterScrapeSeedInstructions) Inflate(client TwitterClient) TwitterS
 	}
 
 	return TwitterScrapeSeedInstructions{inflatedSeedUsers}
+}
+
+func (seed TwitterScrapeSeedInstructions) Persist() {
+	serializedSeed, err := json.Marshal(seed)
+	check(err)
+
+	err = ioutil.WriteFile(SeedFile, serializedSeed, 0644)
+	check(err)
 }

@@ -23,9 +23,9 @@ type CachingTwitterClient struct {
 	cache  FileSystemCache
 }
 
-const Hostname string = "https://eoukkwxovtn2fsw.m.pipedream.net"
+// const Hostname string = "https://eoukkwxovtn2fsw.m.pipedream.net"
 
-// const Hostname string = "https://api.twitter.com"
+const Hostname string = "https://api.twitter.com"
 
 func NewTwitterClient(bearerToken string) TwitterClient {
 	auth := TwitterAuth{bearerToken}

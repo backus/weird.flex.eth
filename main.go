@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -16,18 +15,10 @@ func main() {
 	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
 	client := NewTwitterClient(bearerToken)
 
-	// debugCache()
 	seed, err := LoadTwitterScrapeSeed()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("[initial] Twitter Scrape Seed: %+v\n", seed)
-
+	check(err)
 	seed = seed.Inflate(client)
-
-	fmt.Printf("[inflated] Twitter Scrape Seed: %+v\n", seed)
+	seed.Persist()
 
 	// twitterAuth := TwitterAuth{bearerToken}
 
