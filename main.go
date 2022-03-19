@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -11,12 +13,23 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	// bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
+	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
+	client := NewTwitterClient(bearerToken)
 
-	debugCache()
+	// debugCache()
+	seed, err := LoadTwitterScrapeSeed()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("[initial] Twitter Scrape Seed: %+v\n", seed)
+
+	seed = seed.Inflate(client)
+
+	fmt.Printf("[inflated] Twitter Scrape Seed: %+v\n", seed)
 
 	// twitterAuth := TwitterAuth{bearerToken}
-	// client := NewTwitterClient(bearerToken)
 
 	// fmt.Println("Hello world!")
 	// fmt.Printf("Twitter auth debug = %s\n", client)

@@ -34,6 +34,13 @@ func NewTwitterClient(bearerToken string) TwitterClient {
 	return client
 }
 
+func NewCachedTwitterClient(bearerToken string) CachingTwitterClient {
+	client := NewTwitterClient(bearerToken)
+	cache := NewFileSystemCache("data")
+
+	return CachingTwitterClient{client, cache}
+}
+
 func (auth TwitterAuth) DebugText() string {
 	return auth.bearer
 }
@@ -75,6 +82,40 @@ func (tw TwitterClient) LookupUsers(usernames []string) (TwitterUserListData, er
 
 	var userList TwitterUserListData
 	json.Unmarshal([]byte(body), &userList)
+
+	return userList, nil
+}
+
+func (tw TwitterClient) FakeLookupUsers(usernames []string) (TwitterUserListData, error) {
+	// client := &http.Client{}
+
+	// serializedQuery := strings.Join(usernames, ",")
+	// uri := apiRoute("/2/users/by", map[string]string{"usernames": serializedQuery})
+
+	// req, err := http.NewRequest("GET", uri, nil)
+	// check(err)
+
+	// req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tw.auth.bearer))
+
+	// response, err := client.Do(req)
+	// check(err)
+
+	// defer response.Body.Close()
+
+	// body, err := ioutil.ReadAll(response.Body)
+
+	staticResponse := `{
+		"data": [
+			{
+				"id": "792957828",
+				"name": "John Backus",
+				"username": "backus"
+			}
+		]
+	}`
+
+	var userList TwitterUserListData
+	json.Unmarshal([]byte(staticResponse), &userList)
 
 	return userList, nil
 }
