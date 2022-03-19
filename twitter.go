@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 type TwitterAuth struct {
@@ -15,6 +16,8 @@ type TwitterAuth struct {
 type TwitterClient struct {
 	auth TwitterAuth
 }
+
+const Hostname string = "https://eoukkwxovtn2fsw.m.pipedream.net"
 
 func NewTwitterClient(bearerToken string) TwitterClient {
 	auth := TwitterAuth{bearerToken}
@@ -37,25 +40,43 @@ func (tw TwitterClient) writeToRequestBin(value string) {
 	// curl -d '{
 	// 	"type": "cURL"
 	// }'   -H "Content-Type: application/json"   https://eoukkwxovtn2fsw.m.pipedream.net
-	url := "https://eoukkwxovtn2fsw.m.pipedream.net"
 	payload := map[string]string{"test": value}
-	serialized, err := json.Marshal(payload)
 
-	check(err)
+	rawBody := postReq(tw, apiRoute("/route", map[string]string{"foo": "bar"}), payload)
+	fmt.Printf("Response body (raw): %s\n", rawBody)
+	// serialized, err := json.Marshal(payload)
 
-	bodyBuffer := bytes.NewBuffer(serialized)
-	response, err := http.Post(url, "application/json", bodyBuffer)
+	// check(err)
 
-	check(err)
+	// bodyBuffer := bytes.NewBuffer(serialized)
+	// response, err := http.Post(url, "application/json", bodyBuffer)
 
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	check(err)
-	strBody := string(body)
-	fmt.Printf("Response body: %s\n", strBody)
+	// check(err)
+
+	// defer response.Body.Close()
+	// body, err := ioutil.ReadAll(response.Body)
+	// check(err)
+	// strBody := string(body)
+	// fmt.Printf("Response body: %s\n", strBody)
 }
 
-func postReq(tw TwitterClient, url string, payload interface{}) {
+func apiRoute(path string, query map[string]string) string {
+	baseUrl, err := url.Parse(Hostname)
+	check(err)
+	baseUrl.Path = path
+
+	givenQuery := baseUrl.Query()
+
+	for key, value := range query {
+		givenQuery.Add(key, value)
+	}
+
+	baseUrl.RawQuery = givenQuery.Encode()
+
+	return baseUrl.String()
+}
+
+func postReq(tw TwitterClient, url string, payload interface{}) string {
 	serialized, err := json.Marshal(payload)
 
 	check(err)
@@ -69,7 +90,7 @@ func postReq(tw TwitterClient, url string, payload interface{}) {
 	body, err := ioutil.ReadAll(response.Body)
 	check(err)
 	strBody := string(body)
-	fmt.Printf("Response body: %s\n", strBody)
+	return strBody
 }
 
 type User struct {
