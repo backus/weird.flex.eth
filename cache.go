@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 )
@@ -53,9 +54,10 @@ func (cache FileSystemCache) ReadCache(object Cacheable) []byte {
 
 type JSONSerializable interface{}
 
-type WithCacheCallback func() ([]byte, error)
+type WithRawCacheCallback func() ([]byte, error)
+type WithJSONCacheCallback[ResultType JSONSerializable] func() (ResultType, error)
 
-func (cache FileSystemCache) WithRawCache(subject Cacheable, callback WithCacheCallback) ([]byte, error) {
+func (cache FileSystemCache) WithRawCache(subject Cacheable, callback WithRawCacheCallback) ([]byte, error) {
 	if cache.IsCached(subject) {
 		return cache.ReadCache(subject), nil
 	}
@@ -68,4 +70,29 @@ func (cache FileSystemCache) WithRawCache(subject Cacheable, callback WithCacheC
 
 	cache.WriteCache(subject, liveResult)
 	return liveResult, nil
+}
+
+func WithJSONCache[Deserialized JSONSerializable](cache FileSystemCache, subject Cacheable, callback WithJSONCacheCallback[Deserialized]) (Deserialized, error) {
+	var deserialized Deserialized
+
+	if cache.IsCached(subject) {
+		data := cache.ReadCache(subject)
+		json.Unmarshal(data, &deserialized)
+		return deserialized, nil
+	}
+
+	deserialized, err := callback()
+
+	if err != nil {
+		return deserialized, err
+	}
+
+	serialized, err := json.MarshalIndent(deserialized, "", "  ")
+	if err != nil {
+		return deserialized, err
+	}
+
+	cache.WriteCache(subject, serialized)
+
+	return deserialized, nil
 }

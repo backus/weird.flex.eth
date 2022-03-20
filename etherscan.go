@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/url"
+	"time"
 )
 
 type EtherscanClient struct {
@@ -38,36 +39,17 @@ func (subject BalanceCheck) CacheKey() string {
 
 func (client EtherscanClient) CachedGetBalance(address ETHAddress) GetBalanceResponse {
 	logger.Debug("Looking up balance for %s", address)
-	var result GetBalanceResponse
-	balanceCheck := BalanceCheck(address)
 
-	data, err := client.cache.WithRawCache(balanceCheck, func() ([]byte, error) {
-		balanceResult := client.GetBalance(address)
-
-		return balanceResult, nil
+	result, err := WithJSONCache(client.cache, BalanceCheck(address), func() (GetBalanceResponse, error) {
+		return client.GetBalance(address)
 	})
 
 	check(err)
-	json.Unmarshal(data, &result)
-
-	// if client.cache.IsCached(balanceCheck) {
-	// 	rawData := string(client.cache.ReadCache(balanceCheck))
-	// 	json.Unmarshal([]byte(rawData), &result)
-	// } else {
-	// 	result = client.GetBalance(ETHAddress(balanceCheck))
-	// 	serialized, err := json.MarshalIndent(result, "", "  ")
-	// 	check(err)
-
-	// 	// Etherscan rate limit = 5 requests per second
-	// 	time.Sleep(200 * time.Millisecond)
-
-	// 	client.cache.WriteCache(balanceCheck, []byte(serialized))
-	// }
 
 	return result
 }
 
-func (client EtherscanClient) GetBalance(address ETHAddress) []byte {
+func (client EtherscanClient) GetBalance(address ETHAddress) (GetBalanceResponse, error) {
 	logger.Debug("Looking up balance for %s", address)
 
 	url := apiUrl(map[string]string{
@@ -79,14 +61,21 @@ func (client EtherscanClient) GetBalance(address ETHAddress) []byte {
 	})
 
 	body, err := StrictGetRequest(url, nil)
-	check(err)
+	if err != nil {
+		return GetBalanceResponse{}, err
+	}
 
-	return body
+	var result GetBalanceResponse
+	json.Unmarshal(body, &result)
 
-	// var result GetBalanceResponse
-	// json.Unmarshal(body, &result)
+	if result.Message != "OK" {
+		return GetBalanceResponse{}, fmt.Errorf("etherscan api response error: %s", result.Result)
+	}
 
-	// return result
+	// Etherscan rate limit = 5 requests per second
+	time.Sleep(150 * time.Millisecond)
+
+	return result, nil
 }
 
 type GetPriceResponse struct {
