@@ -111,26 +111,6 @@ type PaginatedUserList struct {
 	}
 }
 
-// Facade that reads each page from `ListFollowing`.
-// NOTE: This doesn't play well with Twitter rate limits. If you hit a rate limit, just run the program again.
-func (tw TwitterClient) ListAllFollowing(userId string, cache FileSystemCache) []TwitterUser {
-	var following []TwitterUser
-
-	options := TwitterAPIListFollowingRequestOptions{}
-
-	for {
-		followingPage := tw.ListFollowing(userId, cache, options)
-		following = append(following, followingPage.Data...)
-		options.PaginationToken = followingPage.Meta.NextToken
-
-		if options.PaginationToken == nil {
-			break
-		}
-	}
-
-	return following
-}
-
 // Given a UserID, get a single page of 1000 users they are following via /2/users/:id/following
 func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, options TwitterAPIListFollowingRequestOptions) PaginatedUserList {
 	path := fmt.Sprintf("/2/users/%s/following", userId)
@@ -153,8 +133,11 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 	} else {
 		logger.Debug("Performing live request for %s\n", requestInput.CacheKey())
 
-		rawResponse = submitGetRequest(tw, url)
-		cache.WriteCache(requestInput, []byte(rawResponse))
+		rawResponse, err := tw.get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+		cache.WriteCache(requestInput, rawResponse)
 	}
 
 	json.Unmarshal([]byte(rawResponse), &paginatedUserList)
@@ -164,27 +147,16 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 
 // Expand a list of usernames into user IDs.
 func (tw TwitterClient) LookupUsers(usernames []string) (TwitterAPIUsersList, error) {
-	client := &http.Client{}
-
 	serializedQuery := strings.Join(usernames, ",")
 	uri := apiRoute("/2/users/by", map[string]string{"usernames": serializedQuery})
 
-	req, err := http.NewRequest("GET", uri, nil)
-	check(err)
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tw.auth.bearer))
-
-	response, err := client.Do(req)
-	check(err)
-
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-
-	check(err)
+	responseBody, err := tw.get(uri)
+	if err != nil {
+		return TwitterAPIUsersList{}, err
+	}
 
 	var userList TwitterAPIUsersList
-	json.Unmarshal([]byte(body), &userList)
+	json.Unmarshal(responseBody, &userList)
 
 	return userList, nil
 }
@@ -205,26 +177,51 @@ func apiRoute(path string, query map[string]string) string {
 	return baseUrl.String()
 }
 
-func submitGetRequest(tw TwitterClient, url string) string {
+func (tw TwitterClient) get(url string) ([]byte, error) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tw.auth.bearer))
 
 	response, err := client.Do(req)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
-	check(err)
-	strBody := string(body)
-
 	if response.StatusCode != 200 {
-		log.Fatalf("Error! Received status code %s while requesting %s\nResponse body = %s\n", response.Status, url, strBody)
+		return nil, fmt.Errorf("expected a 200 OK status code, but received %s while requesting %s", response.Status, url)
 	}
 
-	return strBody
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+// Facade that reads each page from `ListFollowing`.
+// NOTE: This doesn't play well with Twitter rate limits. If you hit a rate limit, just run the program again.
+func (tw TwitterClient) ListAllFollowing(userId string, cache FileSystemCache) []TwitterUser {
+	var following []TwitterUser
+
+	options := TwitterAPIListFollowingRequestOptions{}
+
+	for {
+		followingPage := tw.ListFollowing(userId, cache, options)
+		following = append(following, followingPage.Data...)
+		options.PaginationToken = followingPage.Meta.NextToken
+
+		if options.PaginationToken == nil {
+			break
+		}
+	}
+
+	return following
 }
