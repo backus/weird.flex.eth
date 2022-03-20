@@ -39,13 +39,13 @@ func main() {
 
 	sortedResults := userReport.SortedReportList(app.users)
 
-	heading := fmt.Sprintf("| %-15s | %-50s | %11s | %12s |\n", "Twitter handle", "ENS Domain", "ETH Balance", "USD Balance")
+	heading := fmt.Sprintf("| %-16s | %-50s | %11s | %12s |\n", "Twitter handle", "ENS Domain", "ETH Balance", "USD Balance")
 	fmt.Printf(heading)
 	fmt.Printf("%s\n", strings.Repeat("-", len(heading)))
 
 	for _, userReport := range sortedResults {
 		fmt.Printf(
-			"| %-15s | %-50s | %11.2f | $%11s | \n",
+			"| @%-15s | %-50s | %11.2f | $%11s | \n",
 			userReport.user.Username,
 			strings.Join(userReport.ensReportList.domains(), ", "),
 			userReport.ensReportList.totalBalance(),
