@@ -163,10 +163,10 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 	var rawResponse string
 
 	if cache.IsCached(requestInput) {
-		// fmt.Printf("Cache hit for %s\n", requestInput.CacheKey())
+		logger.Debug("Cache hit for %s\n", requestInput.CacheKey())
 		rawResponse = string(cache.ReadCache(requestInput))
 	} else {
-		fmt.Printf("Performing live request for %s\n", requestInput.CacheKey())
+		logger.Debug("Performing live request for %s\n", requestInput.CacheKey())
 
 		rawResponse = submitGetRequest(tw, url)
 		cache.WriteCache(requestInput, []byte(rawResponse))

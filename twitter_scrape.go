@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 )
 
 type TwitterScrapeSeedUser struct {
@@ -55,7 +54,7 @@ func (seed TwitterScrapeSeedInstructions) Inflate(client TwitterClient) TwitterS
 	}
 
 	if len(usernames) == 0 {
-		log.Println("All seed users already have IDs. No inflation necessary")
+		logger.Debug("All seed users already have IDs. No inflation necessary")
 		return seed
 	}
 
@@ -101,15 +100,15 @@ func (seed TwitterScrapeSeedInstructions) LoadFollowing(client TwitterClient) []
 
 	for _, user := range seed.Users {
 		if !user.Enabled {
-			// fmt.Printf("Seed user %s is disabled. Skipping!\n", user.Username)
+			logger.Debug("Seed user %s is disabled. Skipping!\n", user.Username)
 			continue
 		}
 
-		// fmt.Printf("Fetching following list for %s\n", user.Username)
+		logger.Debug("Fetching following list for %s\n", user.Username)
 
 		userFollowing := client.ListAllFollowing(*user.Id, requestCache)
 
-		fmt.Printf("Fetched following list of %d users via %s\n", len(userFollowing), user.Username)
+		logger.Debug("Fetched following list of %d users via %s\n", len(userFollowing), user.Username)
 
 		following = append(following, userFollowing...)
 	}
