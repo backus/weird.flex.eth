@@ -1,7 +1,9 @@
 {
   "users": [
     { "username": "backus", "id": "792957828", "enabled": true },
-    { "username": "nayafia", "id": "326511843", "enabled": true },
-    { "username": "devonzuegel", "id": "709644992", "enabled": true }
+    { "username": "alain", "id": "15388626", "enabled": true },
+    { "username": "emmalsalinas", "id": "951571688642269184", "enabled": true },
+    { "username": "nayafia", "id": "326511843", "enabled": false },
+    { "username": "devonzuegel", "id": "709644992", "enabled": false }
   ]
 }

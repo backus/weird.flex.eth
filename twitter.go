@@ -102,6 +102,24 @@ type PaginatedUserList struct {
 	}
 }
 
+func (tw TwitterClient) ListAllFollowing(userId string, cache FileSystemCache) []TwitterUserFollowing {
+	var following []TwitterUserFollowing
+
+	options := ListFollowingOptions{}
+
+	for {
+		followingPage := tw.ListFollowing(userId, cache, options)
+		following = append(following, followingPage.Data...)
+		options.PaginationToken = followingPage.Meta.NextToken
+
+		if options.PaginationToken == nil {
+			break
+		}
+	}
+
+	return following
+}
+
 func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, options ListFollowingOptions) PaginatedUserList {
 	path := fmt.Sprintf("/2/users/%s/following", userId)
 	params := make(map[string]string)
@@ -118,10 +136,10 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 	var rawResponse string
 
 	if cache.IsCached(requestInput) {
-		fmt.Println("Cache hit")
+		// fmt.Printf("Cache hit for %s\n", requestInput.CacheKey())
 		rawResponse = string(cache.ReadCache(requestInput))
 	} else {
-		fmt.Println("Cache miss")
+		fmt.Printf("Performing live request for %s\n", requestInput.CacheKey())
 
 		rawResponse = submitGetRequest(tw, url)
 		cache.WriteCache(requestInput, []byte(rawResponse))

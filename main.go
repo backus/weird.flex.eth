@@ -23,9 +23,18 @@ func main() {
 
 	requestCache := NewFileSystemCache("data")
 
-	result := client.ListFollowing(*seed.Users[0].Id, requestCache, ListFollowingOptions{})
+	for _, user := range seed.Users {
+		if !user.Enabled {
+			fmt.Printf("Seed user %s is disabled. Skipping!\n", user.Username)
+			continue
+		}
 
-	fmt.Printf("Result: %+v\n", result)
+		fmt.Printf("Fetching following list for %s\n", user.Username)
+
+		following := client.ListAllFollowing(*user.Id, requestCache)
+
+		fmt.Printf("Fetched following list of %d users via %s\n", len(following), user.Username)
+	}
 
 	// twitterAuth := TwitterAuth{bearerToken}
 
