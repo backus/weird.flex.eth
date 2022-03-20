@@ -33,7 +33,7 @@ func main() {
 	logger.Debug("Total users in pool: %d\n\n", len(app.users))
 
 	ethPrice := app.etherscan.GetETHUSDPrice()
-	logger.Info("ETH/USD price: %f\n", ethPrice)
+	logger.Debug("ETH/USD price: %f\n\n", ethPrice)
 
 	userReport := BuildReport(app, app.users)
 
