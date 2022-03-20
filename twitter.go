@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -178,32 +176,9 @@ func apiRoute(path string, query map[string]string) string {
 }
 
 func (tw TwitterClient) get(url string) ([]byte, error) {
-	client := &http.Client{}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tw.auth.bearer))
-
-	response, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("expected a 200 OK status code, but received %s while requesting %s", response.Status, url)
-	}
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
+	return StrictGetRequest(url, map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", tw.auth.bearer),
+	})
 }
 
 // Facade that reads each page from `ListFollowing`.

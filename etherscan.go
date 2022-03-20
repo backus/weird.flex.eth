@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -62,6 +60,8 @@ func (client EtherscanClient) CachedGetBalance(address ETHAddress) GetBalanceRes
 }
 
 func (client EtherscanClient) GetBalance(address ETHAddress) GetBalanceResponse {
+	logger.Debug("Looking up balance for %s", address)
+
 	url := apiUrl(map[string]string{
 		"module":  "account",
 		"action":  "balance",
@@ -70,15 +70,10 @@ func (client EtherscanClient) GetBalance(address ETHAddress) GetBalanceResponse 
 		"apikey":  client.apiKey,
 	})
 
-	response, err := http.Get(url)
-	check(err)
-
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := StrictGetRequest(url, nil)
 	check(err)
 
 	var result GetBalanceResponse
-
 	json.Unmarshal(body, &result)
 
 	return result
@@ -93,22 +88,20 @@ type GetPriceResponse struct {
 }
 
 func (client EtherscanClient) GetETHUSDPrice() *big.Float {
+	logger.Debug("Fetching ETH/USD price")
+
 	url := apiUrl(map[string]string{
 		"module": "stats",
 		"action": "ethprice",
 		"apikey": client.apiKey,
 	})
 
-	response, err := http.Get(url)
-	check(err)
-
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	responseBody, err := StrictGetRequest(url, nil)
 	check(err)
 
 	var result GetPriceResponse
 
-	json.Unmarshal(body, &result)
+	json.Unmarshal(responseBody, &result)
 
 	price, err := parseBigFloat(result.Result.Ethusd)
 	check(err)
