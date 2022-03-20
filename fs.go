@@ -40,7 +40,7 @@ func EnsureDirExists(path string) error {
 	}
 
 	if pathType == DoesNotExist {
-		return os.Mkdir(path, 0777)
+		return os.MkdirAll(path, 0777)
 	} else {
 		return nil
 	}
