@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"path"
-	"strconv"
-	"time"
 )
 
 type FileSystemCache struct {
@@ -17,29 +14,11 @@ type Cacheable interface {
 	CacheKey() string
 }
 
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
 func NewFileSystemCache(dir string) FileSystemCache {
-	projectDir, err := os.Getwd()
-	check(err)
+	cacheDir, err := JoinProjectPath(dir)
 
-	cacheDir := path.Join(projectDir, dir)
-	cacheDirExists, err := fileExists(cacheDir)
 	check(err)
-
-	if !cacheDirExists {
-		err := os.Mkdir(cacheDir, 0777)
-		check(err)
-	}
+	check(EnsureDirExists(cacheDir))
 
 	return FileSystemCache{cacheDir}
 }
@@ -61,10 +40,10 @@ func (cache FileSystemCache) CachePath(object Cacheable) string {
 
 func (cache FileSystemCache) IsCached(object Cacheable) bool {
 	targetFile := cache.CachePath(object)
-	targetExists, err := fileExists(targetFile)
+	pathType, err := checkPathType(targetFile)
 	check(err)
 
-	return targetExists
+	return pathType == IsFile
 }
 
 func (cache FileSystemCache) WriteCache(object Cacheable, serialized []byte) {
@@ -76,30 +55,4 @@ func (cache FileSystemCache) ReadCache(object Cacheable) []byte {
 	check(err)
 
 	return buffer
-}
-
-func debugCache() {
-	rand.Seed(time.Now().UnixNano())
-
-	cache := NewFileSystemCache("data")
-
-	generator := DemoGetRandNum{1, 5000}
-
-	var value int
-
-	if cache.IsCached(generator) {
-		bytes := cache.ReadCache(generator)
-		deserialized, err := strconv.Atoi(string(bytes))
-		check(err)
-		value = deserialized
-		fmt.Printf("From cache%d\n", deserialized)
-	} else {
-		value = rand.Intn(generator.max-generator.min) + generator.min
-		fmt.Printf("Random number = %d\n", value)
-		serialized := strconv.Itoa(value)
-		fmt.Printf("Writing to cache: %s\n", serialized)
-		cache.WriteCache(generator, []byte(serialized))
-	}
-
-	fmt.Printf("Hello! Cached thingy produced %d\n", value)
 }

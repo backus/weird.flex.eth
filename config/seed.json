@@ -3,7 +3,7 @@
     {
       "username": "backus",
       "id": "792957828",
-      "enabled": true
+      "enabled": false
     },
     {
       "username": "alain",
@@ -13,27 +13,27 @@
     {
       "username": "emmalsalinas",
       "id": "951571688642269184",
-      "enabled": true
+      "enabled": false
     },
     {
       "username": "nayafia",
       "id": "326511843",
-      "enabled": true
+      "enabled": false
     },
     {
       "username": "devonzuegel",
       "id": "709644992",
-      "enabled": true
+      "enabled": false
     },
     {
       "username": "APompliano",
       "id": "339061487",
-      "enabled": true
+      "enabled": false
     },
     {
       "username": "tomhschmidt",
       "id": "239090734",
-      "enabled": true
+      "enabled": false
     }
   ]
 }

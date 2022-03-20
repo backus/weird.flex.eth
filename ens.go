@@ -25,12 +25,12 @@ func LoadIgnoreList(path string) []ENSDomain {
 }
 
 func NewIgnoreList(path string) IgnoreList {
-	exists, err := fileExists(path)
+	pathType, err := checkPathType(path)
 	check(err)
 
 	data := []ENSDomain{}
 
-	if exists {
+	if pathType == IsFile {
 		data = LoadIgnoreList(path)
 	} else {
 		serialized, err := json.Marshal(data)
