@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path"
 )
@@ -21,15 +20,6 @@ func NewFileSystemCache(dir string) FileSystemCache {
 	check(EnsureDirExists(cacheDir))
 
 	return FileSystemCache{cacheDir}
-}
-
-type DemoGetRandNum struct {
-	min int
-	max int
-}
-
-func (d DemoGetRandNum) CacheKey() string {
-	return fmt.Sprintf("min-%d_max-%d", d.min, d.max)
 }
 
 func (cache FileSystemCache) CachePath(object Cacheable) string {
