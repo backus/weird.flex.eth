@@ -101,11 +101,11 @@ func (seed TwitterScrapeSeedInstructions) LoadFollowing(client TwitterClient) []
 
 	for _, user := range seed.Users {
 		if !user.Enabled {
-			fmt.Printf("Seed user %s is disabled. Skipping!\n", user.Username)
+			// fmt.Printf("Seed user %s is disabled. Skipping!\n", user.Username)
 			continue
 		}
 
-		fmt.Printf("Fetching following list for %s\n", user.Username)
+		// fmt.Printf("Fetching following list for %s\n", user.Username)
 
 		userFollowing := client.ListAllFollowing(*user.Id, requestCache)
 

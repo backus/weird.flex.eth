@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/dustin/go-humanize"
 	"github.com/joho/godotenv"
 )
 
@@ -47,6 +48,9 @@ func main() {
 	fmt.Printf("Total users in pool: %d\n", len(userPool))
 	fmt.Println()
 
+	ethPrice := etherscan.GetETHUSDPrice()
+	fmt.Printf("ETH/USD price: %f\n", ethPrice)
+
 	userReports := []UserReport{}
 
 	for _, user := range userPool {
@@ -61,7 +65,8 @@ func main() {
 				continue
 			}
 			balance := etherscan.CachedGetBalance(address)
-			wei, err := parseWei(balance.Result)
+			wei, err := parseBigFloat(balance.Result)
+			check(err)
 			eth := weiToEth(wei)
 
 			ensReport := ENSReport{domain, ENSResolution{address, *eth}}
@@ -77,16 +82,22 @@ func main() {
 	fmt.Printf("Total users with ENS domains: %d\n", len(userReports))
 
 	fmt.Println("Resolving ENS domains to ETH addresses...")
+	fmt.Println("")
 
 	sort.SliceStable(userReports, func(i, j int) bool {
 		return userReports[i].domains[0].resolution.balance.Cmp(&userReports[j].domains[0].resolution.balance) != -1
 	})
 
 	for userIndex, userReport := range userReports {
-		fmt.Printf("%d. %s\n", userIndex+1, userReport.user.Username)
+		fmt.Println()
+		fmt.Printf("%d. %s - %s\n", userIndex+1, userReport.user.Username, userReport.user.ShortDescription())
 
 		for _, ensReport := range userReport.domains {
-			fmt.Printf(" - %s = %f ETH\n", ensReport.ens, &ensReport.resolution.balance)
+			dollarBalanceFloat := big.NewFloat(1e18)
+			dollarBalanceFloat.Mul(&ensReport.resolution.balance, ethPrice)
+			dollarBalance, _ := dollarBalanceFloat.Float32()
+
+			fmt.Printf("   %-25s = %-5.2f ETH = $%s\n", ensReport.ens, &ensReport.resolution.balance, humanize.Comma(int64(dollarBalance)))
 		}
 	}
 }

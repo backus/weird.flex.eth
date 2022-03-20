@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"net/url"
 	"time"
@@ -81,6 +82,37 @@ func (client EtherscanClient) GetBalance(address ETHAddress) GetBalanceResponse 
 	json.Unmarshal(body, &result)
 
 	return result
+}
+
+type GetPriceResponse struct {
+	Status  string
+	Message string
+	Result  struct {
+		Ethusd string `json:"ethusd"`
+	}
+}
+
+func (client EtherscanClient) GetETHUSDPrice() *big.Float {
+	url := apiUrl(map[string]string{
+		"module": "stats",
+		"action": "ethprice",
+		"apikey": client.apiKey,
+	})
+
+	response, err := http.Get(url)
+	check(err)
+
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	check(err)
+
+	var result GetPriceResponse
+
+	json.Unmarshal(body, &result)
+
+	price, err := parseBigFloat(result.Result.Ethusd)
+	check(err)
+	return price
 }
 
 func apiUrl(params map[string]string) string {

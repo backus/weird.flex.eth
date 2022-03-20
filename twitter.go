@@ -110,6 +110,18 @@ type TwitterUserFollowing struct {
 	Description string  `json:"description"`
 }
 
+const MaxDescriptionLength = 50
+
+func (user TwitterUserFollowing) ShortDescription() string {
+	desc := strings.Split(user.Description, "\n")[0]
+
+	if len(desc) > MaxDescriptionLength {
+		desc = fmt.Sprintf("%s...", desc[:MaxDescriptionLength])
+	}
+
+	return desc
+}
+
 type PaginatedUserList struct {
 	Data []TwitterUserFollowing
 	Meta struct {
