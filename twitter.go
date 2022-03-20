@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -242,40 +241,4 @@ func submitGetRequest(tw TwitterClient, url string) string {
 	}
 
 	return strBody
-}
-
-func submitPostRequest(tw TwitterClient, url string, payload interface{}) string {
-	serialized, err := json.Marshal(payload)
-
-	check(err)
-
-	bodyBuffer := bytes.NewBuffer(serialized)
-	response, err := http.Post(url, "application/json", bodyBuffer)
-
-	check(err)
-
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	check(err)
-	strBody := string(body)
-	return strBody
-}
-
-type User struct {
-	Name string `json:"name`
-	Age  *int   `json:"age",omitempty`
-}
-
-func (u User) String() string {
-	if u.Age != nil {
-		return fmt.Sprintf("User(name=%s, age=%d)", u.Name, *u.Age)
-	} else {
-		return fmt.Sprintf("User(name=%s, age=Nil)", u.Name)
-	}
-}
-
-func ParseUserJSON(raw string) {
-	var user User
-	json.Unmarshal([]byte(raw), &user)
-	fmt.Printf("Parsed user: %s\n", user)
 }

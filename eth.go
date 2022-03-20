@@ -13,10 +13,6 @@ func parseBigFloat(value string) (*big.Float, error) {
 	return f, err
 }
 
-func parseWei(value string) (*big.Float, error) {
-	return parseBigFloat(value)
-}
-
 func weiToEth(val *big.Float) *big.Float {
 	return val.Quo(val, big.NewFloat(1e18))
 }
