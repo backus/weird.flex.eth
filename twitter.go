@@ -20,11 +20,6 @@ type TwitterClient struct {
 	auth TwitterAuth
 }
 
-type CachingTwitterClient struct {
-	client TwitterClient
-	cache  FileSystemCache
-}
-
 const Hostname string = "https://api.twitter.com"
 
 func NewTwitterClient(bearerToken string) TwitterClient {
@@ -34,41 +29,26 @@ func NewTwitterClient(bearerToken string) TwitterClient {
 	return client
 }
 
-func NewCachedTwitterClient(bearerToken string) CachingTwitterClient {
-	client := NewTwitterClient(bearerToken)
-	cache := NewFileSystemCache("data")
-
-	return CachingTwitterClient{client, cache}
+// API Response type for /2/users/by/:username
+type TwitterAPIUsersList struct {
+	Data []struct {
+		Id       string
+		Name     string
+		Username string
+	}
 }
 
-func (auth TwitterAuth) DebugText() string {
-	return auth.bearer
-}
-
-func (tw TwitterClient) String() string {
-	return fmt.Sprintf("TwitterClient(bearer=%s)", tw.auth.bearer)
-}
-
-type TwitterUser struct {
-	Id       string
-	Name     string
-	Username string
-}
-
-type TwitterUserListData struct {
-	Data []TwitterUser
-}
-
-type ListFollowingOptions struct {
+type TwitterAPIListFollowingRequestOptions struct {
 	PaginationToken *string
 }
 
-type ListFollowingRequestInput struct {
+// This type is used to create a Cacheable request
+type TwitterAPIListFollowingRequestInput struct {
 	path   string
 	params map[string]string
 }
 
-func (req ListFollowingRequestInput) CacheKey() string {
+func (req TwitterAPIListFollowingRequestInput) CacheKey() string {
 	token, isPresent := req.params["pagination_token"]
 	var tokenDisplay string
 
@@ -98,7 +78,9 @@ var UserFields = []string{
 	"withheld",
 }
 
-type TwitterUserFollowing struct {
+// This is a struct a single user in the list we get back from /2/users/:id/following
+// More importantly though, this is also the Twitter user struct we pass around for analysis
+type TwitterUser struct {
 	Id          string  `json:"id"`
 	Name        string  `json:"name"`
 	Url         *string `json:"url"`
@@ -108,7 +90,9 @@ type TwitterUserFollowing struct {
 
 const MaxDescriptionLength = 50
 
-func (user TwitterUserFollowing) ShortDescription() string {
+// When we print out a user as part of the final report, we want to show some more context
+// on the user via their bio, but we don't want to print the entire thing
+func (user TwitterUser) ShortDescription() string {
 	desc := strings.Split(user.Description, "\n")[0]
 
 	if len(desc) > MaxDescriptionLength {
@@ -118,18 +102,21 @@ func (user TwitterUserFollowing) ShortDescription() string {
 	return desc
 }
 
+// Struct for the API Response for a single page from /2/users/:id/following
 type PaginatedUserList struct {
-	Data []TwitterUserFollowing
+	Data []TwitterUser
 	Meta struct {
 		ResultCount int     `json:"result_count"`
 		NextToken   *string `json:"next_token"`
 	}
 }
 
-func (tw TwitterClient) ListAllFollowing(userId string, cache FileSystemCache) []TwitterUserFollowing {
-	var following []TwitterUserFollowing
+// Facade that reads each page from `ListFollowing`.
+// NOTE: This doesn't play well with Twitter rate limits. If you hit a rate limit, just run the program again.
+func (tw TwitterClient) ListAllFollowing(userId string, cache FileSystemCache) []TwitterUser {
+	var following []TwitterUser
 
-	options := ListFollowingOptions{}
+	options := TwitterAPIListFollowingRequestOptions{}
 
 	for {
 		followingPage := tw.ListFollowing(userId, cache, options)
@@ -144,7 +131,8 @@ func (tw TwitterClient) ListAllFollowing(userId string, cache FileSystemCache) [
 	return following
 }
 
-func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, options ListFollowingOptions) PaginatedUserList {
+// Given a UserID, get a single page of 1000 users they are following via /2/users/:id/following
+func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, options TwitterAPIListFollowingRequestOptions) PaginatedUserList {
 	path := fmt.Sprintf("/2/users/%s/following", userId)
 	params := make(map[string]string)
 	params["max_results"] = "1000"
@@ -154,7 +142,7 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 		params["pagination_token"] = *options.PaginationToken
 	}
 
-	requestInput := ListFollowingRequestInput{path, params}
+	requestInput := TwitterAPIListFollowingRequestInput{path, params}
 	url := apiRoute(path, params)
 	var paginatedUserList PaginatedUserList
 	var rawResponse string
@@ -174,7 +162,8 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 	return paginatedUserList
 }
 
-func (tw TwitterClient) LookupUsers(usernames []string) (TwitterUserListData, error) {
+// Expand a list of usernames into user IDs.
+func (tw TwitterClient) LookupUsers(usernames []string) (TwitterAPIUsersList, error) {
 	client := &http.Client{}
 
 	serializedQuery := strings.Join(usernames, ",")
@@ -194,7 +183,7 @@ func (tw TwitterClient) LookupUsers(usernames []string) (TwitterUserListData, er
 
 	check(err)
 
-	var userList TwitterUserListData
+	var userList TwitterAPIUsersList
 	json.Unmarshal([]byte(body), &userList)
 
 	return userList, nil

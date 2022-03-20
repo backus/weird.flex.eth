@@ -93,8 +93,8 @@ func (seed TwitterScrapeSeedInstructions) Persist() {
 	check(err)
 }
 
-func (seed TwitterScrapeSeedInstructions) LoadFollowing(client TwitterClient) []TwitterUserFollowing {
-	var following []TwitterUserFollowing
+func (seed TwitterScrapeSeedInstructions) LoadFollowing(client TwitterClient) []TwitterUser {
+	var following []TwitterUser
 
 	requestCache := NewFileSystemCache("data")
 
@@ -113,7 +113,7 @@ func (seed TwitterScrapeSeedInstructions) LoadFollowing(client TwitterClient) []
 		following = append(following, userFollowing...)
 	}
 
-	var uniqueFollowing []TwitterUserFollowing
+	var uniqueFollowing []TwitterUser
 	seen := make(map[string]bool)
 
 	for _, user := range following {

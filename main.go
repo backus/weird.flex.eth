@@ -21,7 +21,7 @@ type ENSReport struct {
 }
 
 type UserReport struct {
-	user    TwitterUserFollowing
+	user    TwitterUser
 	domains []ENSReport
 }
 

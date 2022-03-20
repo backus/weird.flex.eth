@@ -6,7 +6,7 @@ import (
 
 type ENSDomain string
 
-func ENSDomains(users []TwitterUserFollowing) []ENSDomain {
+func ENSDomains(users []TwitterUser) []ENSDomain {
 	extractedDomains := []ENSDomain{}
 
 	for _, user := range users {
@@ -16,7 +16,7 @@ func ENSDomains(users []TwitterUserFollowing) []ENSDomain {
 	return extractedDomains
 }
 
-func (user TwitterUserFollowing) ENSDomains() []ENSDomain {
+func (user TwitterUser) ENSDomains() []ENSDomain {
 	var domains []ENSDomain
 
 	domains = append(domains, findENSDomain(user.Username)...)
