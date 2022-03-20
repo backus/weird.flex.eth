@@ -11,6 +11,8 @@ I don't really care about who is showing off the biggest ETH balance. I'm just t
 * Complex enough that I can spend part of the weekend refactoring the code to further increase my familiarity with Go
 * Of zero consequence in my life otherwise so I don't have to ever edit this code again
 
+Beyond that, my only other rules for myself were to avoid using an open source library for most things since the entire point of this is learning. That is why 2/3 of the API clients in this repo are hand written.
+
 ## What?
 
 Here is what this repo does:
