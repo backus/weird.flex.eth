@@ -110,6 +110,24 @@ type PaginatedUserList struct {
 }
 
 // Given a UserID, get a single page of 1000 users they are following via /2/users/:id/following
+func (tw TwitterClient) CachedListFollowing(userId string, cache FileSystemCache, options TwitterAPIListFollowingRequestOptions) PaginatedUserList {
+	// TODO: This method could be slimmed down a lot if I change up how I compute the cache key
+	path := fmt.Sprintf("/2/users/%s/following", userId)
+	params := make(map[string]string)
+
+	if options.PaginationToken != nil {
+		params["pagination_token"] = *options.PaginationToken
+	}
+
+	requestInput := TwitterAPIListFollowingRequestInput{path, params}
+	paginatedUserList, err := WithJSONCache(cache, requestInput, func() (PaginatedUserList, error) {
+		return tw.ListFollowing(userId, cache, options), nil
+	})
+	check(err)
+
+	return paginatedUserList
+}
+
 func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, options TwitterAPIListFollowingRequestOptions) PaginatedUserList {
 	path := fmt.Sprintf("/2/users/%s/following", userId)
 	params := make(map[string]string)
@@ -120,22 +138,15 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 		params["pagination_token"] = *options.PaginationToken
 	}
 
-	requestInput := TwitterAPIListFollowingRequestInput{path, params}
 	url := apiRoute(path, params)
 	var paginatedUserList PaginatedUserList
 	var rawResponse []byte
 
-	if cache.IsCached(requestInput) {
-		logger.Debug("Cache hit for %s\n", requestInput.CacheKey())
-		rawResponse = cache.ReadCache(requestInput)
-	} else {
-		logger.Debug("Performing live request for %s\n", requestInput.CacheKey())
+	logger.Debug("Performing live request for users %s is following\n", userId)
 
-		rawResponse, err := tw.get(url)
-		if err != nil {
-			log.Fatal(err)
-		}
-		cache.WriteCache(requestInput, rawResponse)
+	rawResponse, err := tw.get(url)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	json.Unmarshal(rawResponse, &paginatedUserList)
@@ -189,7 +200,7 @@ func (tw TwitterClient) ListAllFollowing(userId string, cache FileSystemCache) [
 	options := TwitterAPIListFollowingRequestOptions{}
 
 	for {
-		followingPage := tw.ListFollowing(userId, cache, options)
+		followingPage := tw.CachedListFollowing(userId, cache, options)
 		following = append(following, followingPage.Data...)
 		options.PaginationToken = followingPage.Meta.NextToken
 

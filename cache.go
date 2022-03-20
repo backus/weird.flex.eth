@@ -76,6 +76,8 @@ func WithJSONCache[Deserialized JSONSerializable](cache FileSystemCache, subject
 	var deserialized Deserialized
 
 	if cache.IsCached(subject) {
+		logger.Debug("Cache hit (%s)", subject.CacheKey())
+
 		data := cache.ReadCache(subject)
 		json.Unmarshal(data, &deserialized)
 		return deserialized, nil
