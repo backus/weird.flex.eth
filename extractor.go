@@ -22,6 +22,7 @@ func (user TwitterUserFollowing) ENSDomains() []ENSDomain {
 	domains = append(domains, findENSDomain(user.Username)...)
 	domains = append(domains, findENSDomain(user.Name)...)
 	domains = append(domains, findENSDomain(user.Description)...)
+	// TODO: Check if the URL field (which is always a t.co domain) can resolve to an ENS domain?
 
 	return domains
 }
