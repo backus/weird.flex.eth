@@ -24,7 +24,17 @@ func (user TwitterUserFollowing) ENSDomains() []ENSDomain {
 	domains = append(domains, findENSDomain(user.Description)...)
 	// TODO: Check if the URL field (which is always a t.co domain) can resolve to an ENS domain?
 
-	return domains
+	uniqueDomains := []ENSDomain{}
+	seen := map[ENSDomain]bool{}
+
+	for _, domain := range domains {
+		if !seen[domain] {
+			uniqueDomains = append(uniqueDomains, domain)
+			seen[domain] = true
+		}
+	}
+
+	return uniqueDomains
 }
 
 /*

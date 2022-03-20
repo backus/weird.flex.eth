@@ -3,10 +3,29 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/big"
 	"os"
+	"sort"
 
 	"github.com/joho/godotenv"
 )
+
+type ENSResolution struct {
+	address ETHAddress
+	balance big.Float
+}
+
+type ENSReport struct {
+	ens        ENSDomain
+	resolution ENSResolution
+	// eth        *ETHAddress
+	// ethBalance *big.Float
+}
+
+type UserReport struct {
+	user    TwitterUserFollowing
+	domains []ENSReport
+}
 
 func main() {
 	err := godotenv.Load()
@@ -28,36 +47,46 @@ func main() {
 	fmt.Printf("Total users in pool: %d\n", len(userPool))
 	fmt.Println()
 
-	extractedDomains := ENSDomains(userPool)
+	userReports := []UserReport{}
 
-	fmt.Printf("Total ENS domains extracted: %d\n", len(extractedDomains))
+	for _, user := range userPool {
+		domains := user.ENSDomains()
+		if len(domains) == 0 {
+			continue
+		}
+		ensReports := []ENSReport{}
+		for _, domain := range domains {
+			address, err := ens.CachedResolve(domain)
+			if err != nil {
+				continue
+			}
+			balance := etherscan.CachedGetBalance(address)
+			wei, err := parseWei(balance.Result)
+			eth := weiToEth(wei)
 
-	for i, domain := range extractedDomains {
-		fmt.Printf("%d. %s\n", i+1, domain)
+			ensReport := ENSReport{domain, ENSResolution{address, *eth}}
+			ensReports = append(ensReports, ensReport)
+		}
+		if len(ensReports) == 0 {
+			continue
+		}
+		userReport := UserReport{user, ensReports}
+		userReports = append(userReports, userReport)
 	}
+
+	fmt.Printf("Total users with ENS domains: %d\n", len(userReports))
 
 	fmt.Println("Resolving ENS domains to ETH addresses...")
 
-	ethAddresses := []ETHAddress{}
+	sort.SliceStable(userReports, func(i, j int) bool {
+		return userReports[i].domains[0].resolution.balance.Cmp(&userReports[j].domains[0].resolution.balance) != -1
+	})
 
-	for i, domain := range extractedDomains {
-		address, err := ens.CachedResolve(domain)
+	for userIndex, userReport := range userReports {
+		fmt.Printf("%d. %s\n", userIndex+1, userReport.user.Username)
 
-		if err != nil {
-			fmt.Printf("%d. %s -> (resolve failed)\n", i+1, domain)
-		} else {
-			ethAddresses = append(ethAddresses, address)
-			fmt.Printf("%d. %s -> %s\n", i+1, domain, address)
+		for _, ensReport := range userReport.domains {
+			fmt.Printf(" - %s = %f ETH\n", ensReport.ens, &ensReport.resolution.balance)
 		}
 	}
-
-	for i, ethAddress := range ethAddresses {
-		balance := etherscan.CachedGetBalance(ethAddress)
-		wei, err := parseWei(balance.Result)
-		eth := weiToEth(wei)
-		check(err)
-		fmt.Printf("%d. %s balance = %f\n", i+1, ethAddress, eth)
-	}
-
-	fmt.Println("Done!")
 }
