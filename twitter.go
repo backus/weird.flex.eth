@@ -25,8 +25,6 @@ type CachingTwitterClient struct {
 	cache  FileSystemCache
 }
 
-// const Hostname string = "https://eoukkwxovtn2fsw.m.pipedream.net"
-
 const Hostname string = "https://api.twitter.com"
 
 func NewTwitterClient(bearerToken string) TwitterClient {
@@ -47,7 +45,6 @@ func (auth TwitterAuth) DebugText() string {
 	return auth.bearer
 }
 
-// Kind of equivalent to defining TwitterClient#inspect in Ruby
 func (tw TwitterClient) String() string {
 	return fmt.Sprintf("TwitterClient(bearer=%s)", tw.auth.bearer)
 }

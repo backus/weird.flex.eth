@@ -18,8 +18,6 @@ type ENSResolution struct {
 type ENSReport struct {
 	ens        ENSDomain
 	resolution ENSResolution
-	// eth        *ETHAddress
-	// ethBalance *big.Float
 }
 
 type UserReport struct {
