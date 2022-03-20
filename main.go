@@ -1,8 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"math/big"
-	"sort"
+	"strings"
 
 	"github.com/dustin/go-humanize"
 )
@@ -12,14 +13,14 @@ type ENSResolution struct {
 	balance big.Float
 }
 
-type ENSReport struct {
+type ENSReportOld struct {
 	ens        ENSDomain
 	resolution ENSResolution
 }
 
 type UserReport struct {
 	user    TwitterUser
-	domains []ENSReport
+	domains []ENSReportOld
 }
 
 var logger = NewLogger()
@@ -34,51 +35,21 @@ func main() {
 	ethPrice := app.etherscan.GetETHUSDPrice()
 	logger.Info("ETH/USD price: %f\n", ethPrice)
 
-	userReports := []UserReport{}
+	userReport := BuildReport(app, app.users)
 
-	for _, user := range app.users {
-		domains := user.ENSDomains()
-		if len(domains) == 0 {
-			continue
-		}
-		ensReports := []ENSReport{}
-		for _, domain := range domains {
-			address, err := app.ens.CachedResolve(domain)
-			if err != nil {
-				continue
-			}
-			balance := app.etherscan.CachedGetBalance(address)
-			wei, err := parseBigFloat(balance.Result)
-			check(err)
-			eth := weiToEth(wei)
+	sortedResults := userReport.SortedReportList(app.users)
 
-			ensReport := ENSReport{domain, ENSResolution{address, *eth}}
-			ensReports = append(ensReports, ensReport)
-		}
-		if len(ensReports) == 0 {
-			continue
-		}
-		userReport := UserReport{user, ensReports}
-		userReports = append(userReports, userReport)
-	}
+	heading := fmt.Sprintf("| %-15s | %-50s | %11s | %12s |\n", "Twitter handle", "ENS Domain", "ETH Balance", "USD Balance")
+	fmt.Printf(heading)
+	fmt.Printf("%s\n", strings.Repeat("-", len(heading)))
 
-	logger.Info("Total users with ENS domains: %d\n", len(userReports))
-
-	logger.Debug("Resolving ENS domains to ETH addresses...\n\n")
-
-	sort.SliceStable(userReports, func(i, j int) bool {
-		return userReports[i].domains[0].resolution.balance.Cmp(&userReports[j].domains[0].resolution.balance) != -1
-	})
-
-	for userIndex, userReport := range userReports {
-		logger.Info("\n%d. %s - %s\n", userIndex+1, userReport.user.Username, userReport.user.ShortDescription())
-
-		for _, ensReport := range userReport.domains {
-			dollarBalanceFloat := big.NewFloat(1e18)
-			dollarBalanceFloat.Mul(&ensReport.resolution.balance, ethPrice)
-			dollarBalance, _ := dollarBalanceFloat.Float32()
-
-			logger.Info("   %-25s = %-5.2f ETH = $%s\n", ensReport.ens, &ensReport.resolution.balance, humanize.Comma(int64(dollarBalance)))
-		}
+	for _, userReport := range sortedResults {
+		fmt.Printf(
+			"| %-15s | %-50s | %11.2f | $%11s | \n",
+			userReport.user.Username,
+			strings.Join(userReport.ensReportList.domains(), ", "),
+			userReport.ensReportList.totalBalance(),
+			humanize.Commaf(userReport.ensReportList.totalBalanceUSD(ethPrice)),
+		)
 	}
 }
