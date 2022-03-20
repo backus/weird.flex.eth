@@ -83,13 +83,13 @@ func (domain ENSDomain) CacheKey() string {
 	return string(domain)
 }
 
-func (client ENSClient) CachedResolve(domain ENSDomain) (string, error) {
+func (client ENSClient) CachedResolve(domain ENSDomain) (ETHAddress, error) {
 	if client.ignoreList.Has(domain) {
 		return "", errors.New("domain failed to resolve and has been marked as ignored")
 	}
-	var address string
+	var address ETHAddress
 	if client.cache.IsCached(domain) {
-		address = string(client.cache.ReadCache(domain))
+		address = ETHAddress(string(client.cache.ReadCache(domain)))
 	} else {
 		result, err := client.Resolve(domain)
 
@@ -106,12 +106,12 @@ func (client ENSClient) CachedResolve(domain ENSDomain) (string, error) {
 	return address, nil
 }
 
-func (client ENSClient) Resolve(domain ENSDomain) (string, error) {
+func (client ENSClient) Resolve(domain ENSDomain) (ETHAddress, error) {
 	address, err := ens.Resolve(client.client, string(domain))
 
 	if err != nil {
 		return "", err
 	}
 
-	return address.String(), nil
+	return ETHAddress(address.String()), nil
 }

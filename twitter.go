@@ -192,65 +192,6 @@ func (tw TwitterClient) LookupUsers(usernames []string) (TwitterUserListData, er
 	return userList, nil
 }
 
-func (tw TwitterClient) FakeLookupUsers(usernames []string) (TwitterUserListData, error) {
-	// client := &http.Client{}
-
-	// serializedQuery := strings.Join(usernames, ",")
-	// uri := apiRoute("/2/users/by", map[string]string{"usernames": serializedQuery})
-
-	// req, err := http.NewRequest("GET", uri, nil)
-	// check(err)
-
-	// req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tw.auth.bearer))
-
-	// response, err := client.Do(req)
-	// check(err)
-
-	// defer response.Body.Close()
-
-	// body, err := ioutil.ReadAll(response.Body)
-
-	staticResponse := `{
-		"data": [
-			{
-				"id": "792957828",
-				"name": "John Backus",
-				"username": "backus"
-			}
-		]
-	}`
-
-	var userList TwitterUserListData
-	json.Unmarshal([]byte(staticResponse), &userList)
-
-	return userList, nil
-}
-
-func (tw TwitterClient) writeToRequestBin(value string) {
-	// url :=
-	// curl -d '{
-	// 	"type": "cURL"
-	// }'   -H "Content-Type: application/json"   https://eoukkwxovtn2fsw.m.pipedream.net
-	payload := map[string]string{"test": value}
-
-	rawBody := submitPostRequest(tw, apiRoute("/route", map[string]string{"foo": "bar"}), payload)
-	fmt.Printf("Response body (raw): %s\n", rawBody)
-	// serialized, err := json.Marshal(payload)
-
-	// check(err)
-
-	// bodyBuffer := bytes.NewBuffer(serialized)
-	// response, err := http.Post(url, "application/json", bodyBuffer)
-
-	// check(err)
-
-	// defer response.Body.Close()
-	// body, err := ioutil.ReadAll(response.Body)
-	// check(err)
-	// strBody := string(body)
-	// fmt.Printf("Response body: %s\n", strBody)
-}
-
 func apiRoute(path string, query map[string]string) string {
 	baseUrl, err := url.Parse(Hostname)
 	check(err)
