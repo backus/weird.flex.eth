@@ -50,7 +50,8 @@ func (cache FileSystemCache) ReadCache(object Cacheable) []byte {
 	return buffer
 }
 
-// Caching functionality concerned with JSON (de)serialization
+// Caching functionality concerned with providing a generic wrapper for functions
+// that need to add a caching layer
 
 type JSONSerializable interface{}
 
@@ -59,6 +60,7 @@ type WithJSONCacheCallback[ResultType JSONSerializable] func() (ResultType, erro
 
 func (cache FileSystemCache) WithRawCache(subject Cacheable, callback WithRawCacheCallback) ([]byte, error) {
 	if cache.IsCached(subject) {
+		logger.Debug("Cache hit (%s)", subject.CacheKey())
 		return cache.ReadCache(subject), nil
 	}
 

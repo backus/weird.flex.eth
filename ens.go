@@ -87,29 +87,28 @@ func (client ENSClient) CachedResolve(domain ENSDomain) (ETHAddress, error) {
 	if client.ignoreList.Has(domain) {
 		return "", errors.New("domain failed to resolve and has been marked as ignored")
 	}
-	var address ETHAddress
-	if client.cache.IsCached(domain) {
-		address = ETHAddress(string(client.cache.ReadCache(domain)))
-	} else {
-		result, err := client.Resolve(domain)
 
+	data, err := client.cache.WithRawCache(domain, func() ([]byte, error) {
+		address, err := client.Resolve(domain)
 		if err != nil {
-			client.ignoreList.Add(domain)
-			return "", err
+			return nil, err
+		} else {
+			return []byte(address), nil
 		}
+	})
 
-		address = result
-
-		client.cache.WriteCache(domain, []byte(address))
+	if err != nil {
+		return ETHAddress(""), err
 	}
 
-	return address, nil
+	return ETHAddress(data), nil
 }
 
 func (client ENSClient) Resolve(domain ENSDomain) (ETHAddress, error) {
 	address, err := ens.Resolve(client.client, string(domain))
 
 	if err != nil {
+		client.ignoreList.Add(domain)
 		return "", err
 	}
 
