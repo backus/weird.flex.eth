@@ -1,13 +1,10 @@
 package main
 
 import (
-	"log"
 	"math/big"
-	"os"
 	"sort"
 
 	"github.com/dustin/go-humanize"
-	"github.com/joho/godotenv"
 )
 
 type ENSResolution struct {
@@ -28,43 +25,29 @@ type UserReport struct {
 var logger = NewLogger()
 
 func main() {
-	// logger.SetLevel(LogLevelInfo)
+	logger.SetLevel(LogLevelInfo)
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
-	twitter := NewTwitterClient(bearerToken)
-	ens := NewENSClient(os.Getenv("INFURA_URL"))
-	etherscan := NewEtherscanClient(os.Getenv("ETHERSCAN_API_KEY"))
+	app := BootstrapApp()
 
-	seed, err := LoadTwitterScrapeSeed()
-	check(err)
-	seed = seed.Inflate(twitter)
-	seed.Persist()
+	logger.Debug("Total users in pool: %d\n\n", len(app.users))
 
-	userPool := seed.LoadFollowing(twitter)
-
-	logger.Debug("Total users in pool: %d\n\n", len(userPool))
-
-	ethPrice := etherscan.GetETHUSDPrice()
+	ethPrice := app.etherscan.GetETHUSDPrice()
 	logger.Info("ETH/USD price: %f\n", ethPrice)
 
 	userReports := []UserReport{}
 
-	for _, user := range userPool {
+	for _, user := range app.users {
 		domains := user.ENSDomains()
 		if len(domains) == 0 {
 			continue
 		}
 		ensReports := []ENSReport{}
 		for _, domain := range domains {
-			address, err := ens.CachedResolve(domain)
+			address, err := app.ens.CachedResolve(domain)
 			if err != nil {
 				continue
 			}
-			balance := etherscan.CachedGetBalance(address)
+			balance := app.etherscan.CachedGetBalance(address)
 			wei, err := parseBigFloat(balance.Result)
 			check(err)
 			eth := weiToEth(wei)
