@@ -87,7 +87,7 @@ func (seed TwitterScrapeSeedInstructions) Inflate(client TwitterClient) TwitterS
 }
 
 func (seed TwitterScrapeSeedInstructions) Persist() {
-	serializedSeed, err := json.Marshal(seed)
+	serializedSeed, err := json.MarshalIndent(seed, "", "  ")
 	check(err)
 
 	err = ioutil.WriteFile(SeedFile, serializedSeed, 0644)
