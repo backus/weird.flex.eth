@@ -24,22 +24,13 @@ func main() {
 	userPool := seed.LoadFollowing(client)
 
 	fmt.Printf("Total users in pool: %d\n", len(userPool))
+	fmt.Println()
 
-	// twitterAuth := TwitterAuth{bearerToken}
+	extractedDomains := ENSDomains(userPool)
 
-	// fmt.Println("Hello world!")
-	// fmt.Printf("Twitter auth debug = %s\n", client)
-	// // client.writeToRequestBin("go client attempt 2")
+	fmt.Printf("Total ENS domains extracted: %d\n", len(extractedDomains))
 
-	// result, err := client.LookupUsers([]string{"backus"})
-	// check(err)
-	// fmt.Println("Users List Result =", result)
-	// sampleJson1 := `{ "name": "John", "age": 28 }`
-	// sampleJson2 := `{ "name": "John", "age": 28, "dob": "1993-10-07" }`
-	// sampleJson3 := `{ "name": "John" }`
-	// // println(apiRoute("/foo/bar", map[string]string{"q1": "hello", "q2": "goodbye"}))
-	// ParseUserJSON(sampleJson1)
-	// ParseUserJSON(sampleJson2)
-	// ParseUserJSON(sampleJson3)
-	// println("Done")
+	for i, domain := range extractedDomains {
+		fmt.Printf("%d. %s\n", i, domain)
+	}
 }

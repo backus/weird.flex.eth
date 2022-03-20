@@ -103,10 +103,11 @@ var UserFields = []string{
 }
 
 type TwitterUserFollowing struct {
-	Id       string  `json:"id"`
-	Name     string  `json:"name"`
-	Url      *string `json:"url"`
-	Username string  `json:"username"`
+	Id          string  `json:"id"`
+	Name        string  `json:"name"`
+	Url         *string `json:"url"`
+	Username    string  `json:"username"`
+	Description string  `json:"description"`
 }
 
 type PaginatedUserList struct {
