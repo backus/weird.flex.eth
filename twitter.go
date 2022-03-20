@@ -85,7 +85,22 @@ func (req ListFollowingRequestInput) CacheKey() string {
 	return slug.Make(req.path + "?pagination_token=" + tokenDisplay)
 }
 
-var UserFields = []string{"created_at", "description", "entities", "id", "location", "name", "pinned_tweet_id", "profile_image_url", "protected", "public_metrics", "url", "username", "verified", "withheld"}
+var UserFields = []string{
+	"created_at",
+	"description",
+	"entities",
+	"id",
+	"location",
+	"name",
+	"pinned_tweet_id",
+	"profile_image_url",
+	"protected",
+	"public_metrics",
+	"url",
+	"username",
+	"verified",
+	"withheld",
+}
 
 type TwitterUserFollowing struct {
 	Id       string  `json:"id"`

@@ -93,3 +93,36 @@ func (seed TwitterScrapeSeedInstructions) Persist() {
 	err = ioutil.WriteFile(SeedFile, serializedSeed, 0644)
 	check(err)
 }
+
+func (seed TwitterScrapeSeedInstructions) LoadFollowing(client TwitterClient) []TwitterUserFollowing {
+	var following []TwitterUserFollowing
+
+	requestCache := NewFileSystemCache("data")
+
+	for _, user := range seed.Users {
+		if !user.Enabled {
+			fmt.Printf("Seed user %s is disabled. Skipping!\n", user.Username)
+			continue
+		}
+
+		fmt.Printf("Fetching following list for %s\n", user.Username)
+
+		userFollowing := client.ListAllFollowing(*user.Id, requestCache)
+
+		fmt.Printf("Fetched following list of %d users via %s\n", len(userFollowing), user.Username)
+
+		following = append(following, userFollowing...)
+	}
+
+	var uniqueFollowing []TwitterUserFollowing
+	seen := make(map[string]bool)
+
+	for _, user := range following {
+		if !seen[user.Id] {
+			seen[user.Id] = true
+			uniqueFollowing = append(uniqueFollowing, user)
+		}
+	}
+
+	return uniqueFollowing
+}

@@ -21,20 +21,9 @@ func main() {
 	seed = seed.Inflate(client)
 	seed.Persist()
 
-	requestCache := NewFileSystemCache("data")
+	userPool := seed.LoadFollowing(client)
 
-	for _, user := range seed.Users {
-		if !user.Enabled {
-			fmt.Printf("Seed user %s is disabled. Skipping!\n", user.Username)
-			continue
-		}
-
-		fmt.Printf("Fetching following list for %s\n", user.Username)
-
-		following := client.ListAllFollowing(*user.Id, requestCache)
-
-		fmt.Printf("Fetched following list of %d users via %s\n", len(following), user.Username)
-	}
+	fmt.Printf("Total users in pool: %d\n", len(userPool))
 
 	// twitterAuth := TwitterAuth{bearerToken}
 
