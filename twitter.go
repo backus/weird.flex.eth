@@ -125,11 +125,11 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 	requestInput := TwitterAPIListFollowingRequestInput{path, params}
 	url := apiRoute(path, params)
 	var paginatedUserList PaginatedUserList
-	var rawResponse string
+	var rawResponse []byte
 
 	if cache.IsCached(requestInput) {
 		logger.Debug("Cache hit for %s\n", requestInput.CacheKey())
-		rawResponse = string(cache.ReadCache(requestInput))
+		rawResponse = cache.ReadCache(requestInput)
 	} else {
 		logger.Debug("Performing live request for %s\n", requestInput.CacheKey())
 
@@ -140,7 +140,7 @@ func (tw TwitterClient) ListFollowing(userId string, cache FileSystemCache, opti
 		cache.WriteCache(requestInput, rawResponse)
 	}
 
-	json.Unmarshal([]byte(rawResponse), &paginatedUserList)
+	json.Unmarshal(rawResponse, &paginatedUserList)
 
 	return paginatedUserList
 }
