@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"net/url"
-	"time"
 )
 
 type EtherscanClient struct {
@@ -38,28 +37,37 @@ func (subject BalanceCheck) CacheKey() string {
 }
 
 func (client EtherscanClient) CachedGetBalance(address ETHAddress) GetBalanceResponse {
+	logger.Debug("Looking up balance for %s", address)
 	var result GetBalanceResponse
-
 	balanceCheck := BalanceCheck(address)
 
-	if client.cache.IsCached(balanceCheck) {
-		rawData := string(client.cache.ReadCache(balanceCheck))
-		json.Unmarshal([]byte(rawData), &result)
-	} else {
-		result = client.GetBalance(ETHAddress(balanceCheck))
-		serialized, err := json.MarshalIndent(result, "", "  ")
-		check(err)
+	data, err := client.cache.WithRawCache(balanceCheck, func() ([]byte, error) {
+		balanceResult := client.GetBalance(address)
 
-		// Etherscan rate limit = 5 requests per second
-		time.Sleep(200 * time.Millisecond)
+		return balanceResult, nil
+	})
 
-		client.cache.WriteCache(balanceCheck, []byte(serialized))
-	}
+	check(err)
+	json.Unmarshal(data, &result)
+
+	// if client.cache.IsCached(balanceCheck) {
+	// 	rawData := string(client.cache.ReadCache(balanceCheck))
+	// 	json.Unmarshal([]byte(rawData), &result)
+	// } else {
+	// 	result = client.GetBalance(ETHAddress(balanceCheck))
+	// 	serialized, err := json.MarshalIndent(result, "", "  ")
+	// 	check(err)
+
+	// 	// Etherscan rate limit = 5 requests per second
+	// 	time.Sleep(200 * time.Millisecond)
+
+	// 	client.cache.WriteCache(balanceCheck, []byte(serialized))
+	// }
 
 	return result
 }
 
-func (client EtherscanClient) GetBalance(address ETHAddress) GetBalanceResponse {
+func (client EtherscanClient) GetBalance(address ETHAddress) []byte {
 	logger.Debug("Looking up balance for %s", address)
 
 	url := apiUrl(map[string]string{
@@ -73,10 +81,12 @@ func (client EtherscanClient) GetBalance(address ETHAddress) GetBalanceResponse 
 	body, err := StrictGetRequest(url, nil)
 	check(err)
 
-	var result GetBalanceResponse
-	json.Unmarshal(body, &result)
+	return body
 
-	return result
+	// var result GetBalanceResponse
+	// json.Unmarshal(body, &result)
+
+	// return result
 }
 
 type GetPriceResponse struct {

@@ -13,6 +13,8 @@ type Cacheable interface {
 	CacheKey() string
 }
 
+// Caching functionality concerned with the filesystem
+
 func NewFileSystemCache(dir string) FileSystemCache {
 	cacheDir, err := JoinProjectPath(dir)
 
@@ -45,4 +47,25 @@ func (cache FileSystemCache) ReadCache(object Cacheable) []byte {
 	check(err)
 
 	return buffer
+}
+
+// Caching functionality concerned with JSON (de)serialization
+
+type JSONSerializable interface{}
+
+type WithCacheCallback func() ([]byte, error)
+
+func (cache FileSystemCache) WithRawCache(subject Cacheable, callback WithCacheCallback) ([]byte, error) {
+	if cache.IsCached(subject) {
+		return cache.ReadCache(subject), nil
+	}
+
+	liveResult, err := callback()
+
+	if err != nil {
+		return nil, err
+	}
+
+	cache.WriteCache(subject, liveResult)
+	return liveResult, nil
 }

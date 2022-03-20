@@ -28,7 +28,7 @@ type UserReport struct {
 var logger = NewLogger()
 
 func main() {
-	logger.SetLevel(LogLevelInfo)
+	// logger.SetLevel(LogLevelInfo)
 
 	err := godotenv.Load()
 	if err != nil {
